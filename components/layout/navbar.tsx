@@ -11,16 +11,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-// Mock user data - in a real app, this would come from an auth context
-const mockUser = {
-  isLoggedIn: false,
-  name: 'John Doe',
-  email: 'john@example.com',
-  avatarUrl: '',
-};
+import { useAuth } from '@/lib/context/AuthContext';
 
 export function Navbar() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null; // Or a loading spinner
+  }
   return (
     <header className="border-b bg-background">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -39,21 +37,21 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          {mockUser.isLoggedIn ? (
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={mockUser.avatarUrl} alt={mockUser.name} />
-                    <AvatarFallback>{mockUser.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={user.user_metadata?.avatar_url || ''} alt={user.email || ''} />
+                    <AvatarFallback>{user.email?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{mockUser.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{mockUser.email}</p>
+                    <p className="text-sm font-medium leading-none">{user.user_metadata?.full_name || user.email}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
