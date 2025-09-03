@@ -1,43 +1,70 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import Link from 'next/link';
+import { createPoll } from '@/lib/actions/poll';
 
 type FormValues = {
   title: string;
   description?: string;
-  options: string[];
+  options: { value: string }[];
   endDate?: string;
-  allowMultiple: boolean;
-  requireLogin: boolean;
+
 };
+
+const formSchema = z.object({
+  title: z.string().min(5, { message: 'Title must be at least 5 characters.' }).max(100, { message: 'Title must not exceed 100 characters.' }),
+  description: z.string().max(500, { message: 'Description must not exceed 500 characters.' }).optional(),
+  options: z.array(z.object({
+    value: z.string().min(1, { message: 'Option cannot be empty.' }).max(50, { message: 'Option must not exceed 50 characters.' })
+  }))
+    .min(2, { message: 'Please add at least 2 options.' }),
+  endDate: z.string().optional(),
+
+});
 
 export default function CreatePollPage() {
   const [activeTab, setActiveTab] = useState<'basic' | 'settings'>('basic');
-  
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
   const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
       description: '',
-      options: ['', ''],
+      options: [{ value: '' }, { value: '' }],
       endDate: '',
-      allowMultiple: false,
-      requireLogin: true,
+
     },
   });
   
   const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "options",
-  });
-  
+     control: form.control,
+     name: "options",
+   });
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return <div>Loading...</div>; // Or a more sophisticated loading spinner
+  }
+
   const addOption = () => {
-    append('');
+    append({ value: '' });
   };
 
   const removeOption = (index: number) => {
@@ -45,9 +72,22 @@ export default function CreatePollPage() {
     remove(index);
   };
 
-  const onSubmit = (data: FormValues) => {
-    // In a real app, this would send the poll data to an API
-    console.log('Poll submitted', data);
+  const onSubmit = async (data: FormValues) => {
+    const pollData = {
+      ...data,
+      options: data.options.map(option => option.value)
+    };
+    console.log('onSubmit function triggered. Submitting form data:', pollData);
+    const result = await createPoll(pollData);
+    console.log('Result from createPoll:', result);
+
+    if (result.success) {
+      router.push('/polls');
+      alert('Poll created successfully!');
+    } else {
+      console.error('Poll creation failed:', result.error);
+      alert(`Error: ${result.error}`);
+    }
   };
 
   return (
@@ -88,9 +128,9 @@ export default function CreatePollPage() {
         </div>
       </div>
 
-      <Card className="max-w-2xl mx-auto">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <Card className="max-w-2xl mx-auto">
             {activeTab === 'basic' && (
               <>
                 <CardHeader>
@@ -135,7 +175,7 @@ export default function CreatePollPage() {
                       <FormField
                         key={field.id}
                         control={form.control}
-                        name={`options.${index}`}
+                        name={`options.${index}.value`}
                         render={({ field: formField }) => (
                           <FormItem>
                             <div className="flex gap-2 items-center">
@@ -174,9 +214,19 @@ export default function CreatePollPage() {
                      </Button>
                    </div>
                  </CardContent>
-               </>
+                <CardFooter className="flex justify-end pt-6">
+                  <Button 
+                    type="button"
+                    onClick={() => {
+                      console.log('Button click triggered');
+                      form.handleSubmit(onSubmit)();
+                    }}
+                  >
+                    Create Poll
+                  </Button>
+                </CardFooter>
+              </>
             )}
-
             {activeTab === 'settings' && (
               <>
                 <CardHeader>
@@ -186,52 +236,6 @@ export default function CreatePollPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="allowMultiple"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => field.onChange(!field.value)}>
-                            <FormControl>
-                              <input
-                                type="checkbox"
-                                checked={field.value}
-                                onChange={() => field.onChange(!field.value)}
-                                className="w-4 h-4"
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal cursor-pointer">
-                              Allow users to select multiple options
-                            </FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="requireLogin"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => field.onChange(!field.value)}>
-                            <FormControl>
-                              <input
-                                type="checkbox"
-                                checked={field.value}
-                                onChange={() => field.onChange(!field.value)}
-                                className="w-4 h-4"
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal cursor-pointer">
-                              Require users to be logged in to vote
-                            </FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
                   <FormField
                     control={form.control}
                     name="endDate"
@@ -248,20 +252,10 @@ export default function CreatePollPage() {
                 </CardContent>
               </>
             )}
-
-          </form>
-        </Form>
-      </Card>
-      
-      <div className="mt-6 max-w-2xl mx-auto flex justify-end">
-        <Button 
-          type="button" 
-          onClick={() => form.handleSubmit(onSubmit)()}
-          className="px-8"
-        >
-          Create Poll
-        </Button>
-      </div>
+          </Card>
+        </form>
+      </Form>
     </div>
   );
+
 }

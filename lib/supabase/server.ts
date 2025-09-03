@@ -1,5 +1,5 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 export function createClient() {
   const cookieStore = cookies()
@@ -10,7 +10,16 @@ export function createClient() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value
+          const value = cookieStore.get(name)?.value;
+          if (name === 'sb-access-token' && value && value.startsWith('base64-')) {
+            try {
+              return atob(value.substring(7)); // Remove 'base64-' prefix
+            } catch (e) {
+              console.error('Failed to decode base64 cookie in server.ts:', e);
+              return undefined;
+            }
+          }
+          return value;
         },
         set(name: string, value: string, options: CookieOptions) {
           cookieStore.set({ name, value, ...options })
