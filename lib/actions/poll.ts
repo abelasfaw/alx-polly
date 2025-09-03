@@ -28,6 +28,7 @@ export async function createPoll(values: CreatePollFormValues) {
     throw new Error('User not authenticated');
   }
 
+
   console.log('User in createPoll:', user);
   // Log the incoming data to the server action
   console.log('createPoll Server Action received data:', values);
@@ -85,25 +86,28 @@ export async function createPoll(values: CreatePollFormValues) {
     }
 
     revalidatePath('/polls');
-    return { success: true, pollId: poll.id };
+      return { success: true, pollId: poll.id };
   } catch (error: any) {
-    console.error('Failed to create poll:', error.message);
-    return { success: false, error: error.message };
-  }
+      console.error('Failed to create poll:', error.message);
+      return { success: false, error: error.message };
+    }
 }
 
+
+
 export async function deletePoll(formData: FormData) {
-  const pollId = formData.get('pollId') as string;
-  const supabase = createClient();
+  const pollId = formData.get("pollId") as string;
 
-  const { error } = await supabase
-    .from('polls')
-    .delete()
-    .eq('id', pollId);
-
-  if (error) {
-    throw new Error(`Error deleting poll: ${error.message}`);
+  if (!pollId) {
+    console.error("Poll ID is missing.");
+    return;
   }
 
-  revalidatePath('/polls');
+  try {
+    const supabase = createClient();
+    await supabase.from("polls").delete().eq("id", pollId);
+    revalidatePath("/polls");
+  } catch (error: any) {
+    console.error("Error deleting poll:", error.message);
+  }
 }

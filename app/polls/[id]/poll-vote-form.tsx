@@ -5,12 +5,28 @@ import { Button } from '@/components/ui/button';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 
-interface PollVoteFormProps {
-  pollId: string;
-  options: { id: string; text: string; votes: number }[];
+interface PollOption {
+  id: string;
+  option_text: string;
+  votes: number;
+  poll_id: string;
 }
 
-export function PollVoteForm({ pollId, options }: PollVoteFormProps) {
+interface Poll {
+  id: string;
+  question: string;
+  created_at: string;
+  user_id: string;
+  poll_options: PollOption[];
+}
+
+interface PollVoteFormProps {
+  poll: Poll;
+  totalVotes: number;
+  getPercentage: (votes: number) => number;
+}
+
+export function PollVoteForm({ poll, totalVotes, getPercentage }: PollVoteFormProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
   const supabase = createClientComponentClient();
@@ -21,7 +37,7 @@ export function PollVoteForm({ pollId, options }: PollVoteFormProps) {
       // In a real app, this would send the vote to an API
       const { data, error } = await supabase
         .from('poll_options')
-        .update({ votes: options.find(o => o.id === selectedOption)!.votes + 1 })
+        .update({ votes: poll.poll_options.find(o => o.id === selectedOption)!.votes + 1 })
         .eq('id', selectedOption);
 
       if (error) {
@@ -37,7 +53,7 @@ export function PollVoteForm({ pollId, options }: PollVoteFormProps) {
   return (
     <div className="flex-col space-y-4 mt-4">
       <div className="space-y-2">
-        {options.map((option) => (
+        {poll.poll_options.map((option) => (
           <div key={option.id} className="flex items-center gap-2">
             <input
               type="radio"
@@ -49,8 +65,19 @@ export function PollVoteForm({ pollId, options }: PollVoteFormProps) {
               disabled={hasVoted}
             />
             <label htmlFor={option.id} className={hasVoted ? '' : 'cursor-pointer'}>
-              {option.text}
+              {option.option_text}
             </label>
+            {hasVoted && (
+              <div className="flex-grow text-right">
+                <span className="text-sm text-gray-600 mr-2">{getPercentage(option.votes)}%</span>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    style={{ width: `${getPercentage(option.votes)}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
