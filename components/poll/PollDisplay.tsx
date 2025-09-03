@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { revalidatePath } from 'next/cache';
+import Link from 'next/link';
 
 interface PollOption {
   id: string;
@@ -42,30 +43,39 @@ export default async function PollDisplay({ pollId }: PollDisplayProps) {
 
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>{poll.title}</CardTitle>
-          {poll.description && <CardDescription>{poll.description}</CardDescription>}
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {poll.poll_options.map((option: PollOption) => (
-            <div key={option.id} className="flex flex-col space-y-2">
-              <div className="flex justify-between items-center">
-                <span>{option.content}</span>
-                <span>{option.votes} votes</span>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="mb-4">
+        <Link href="/polls">
+          <Button variant="outline">Back to Polls</Button>
+        </Link>
+      </div>
+      <div className="flex justify-center items-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>{poll.title}</CardTitle>
+            {poll.description && <CardDescription>{poll.description}</CardDescription>}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {poll.poll_options.map((option: PollOption) => (
+              <div key={option.id} className="flex flex-col space-y-2">
+                <div className="flex justify-between items-center">
+                  <span>{option.content}</span>
+                  <span>{option.votes} votes</span>
+                </div>
+                <Progress value={totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0} className="w-full" />
+                <form action={handleVote.bind(null, poll.id, option.id)}>
+                  <Button type="submit" className="w-full">Vote</Button>
+                </form>
               </div>
-              <Progress value={totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0} className="w-full" />
-              <form action={handleVote.bind(null, poll.id, option.id)}>
-                <Button type="submit" className="w-full">Vote</Button>
-              </form>
+            ))}
+          </CardContent>
+          <CardFooter>
+            <div className="flex justify-between items-center w-full">
+              <p className="text-sm text-gray-500">Total Votes: {totalVotes}</p>
             </div>
-          ))}
-        </CardContent>
-        <CardFooter>
-          <p className="text-sm text-gray-500">Total Votes: {totalVotes}</p>
-        </CardFooter>
-      </Card>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
