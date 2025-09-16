@@ -1,14 +1,21 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+/**
+ * Home component serves as the landing page of the application.
+ * It provides an introduction to the polling app and navigation to browse or create polls.
+ */
 export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+      {/* Main heading of the landing page */}
       <h1 className="text-4xl md:text-6xl font-bold mb-6">Welcome to Polly</h1>
+      {/* Subheading describing the application's purpose */}
       <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mb-12">
         Create, share, and analyze polls with ease. Get instant feedback from your audience.
       </p>
       
+      {/* Call to action buttons for browsing and creating polls */}
       <div className="flex flex-col sm:flex-row gap-4 mb-16">
         <Button size="lg" asChild>
           <Link href="/polls">Browse Polls</Link>
@@ -18,7 +25,9 @@ export default function Home() {
         </Button>
       </div>
       
+      {/* Feature highlights section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
+        {/* Feature 1: Easy to Use */}
         <div className="flex flex-col items-center p-6 border rounded-lg">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
@@ -34,6 +43,7 @@ export default function Home() {
           </p>
         </div>
         
+        {/* Feature 2: Real-time Results */}
         <div className="flex flex-col items-center p-6 border rounded-lg">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
@@ -48,6 +58,7 @@ export default function Home() {
           </p>
         </div>
         
+        {/* Feature 3: Customizable */}
         <div className="flex flex-col items-center p-6 border rounded-lg">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">

@@ -3,13 +3,23 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+/**
+ * Handles the voting process for a poll option.
+ * Validates the poll and option IDs, checks if the user has already voted,
+ * records the vote, and updates the vote count.
+ * @param {Object} prevState - The previous state containing message and errors.
+ * @param {FormData} formData - The form data containing pollId and optionId.
+ * @returns {Promise<{message: string | null, errors: Record<string, string[]> | null}>} - The result of the voting process.
+ */
 export async function handleVote(
   prevState: { message: string | null; errors: Record<string, string[]> | null },
   formData: FormData
 ) {
+  // Extracts pollId and optionId from formData.
   const pollId = formData.get('pollId') as string;
   const optionId = formData.get('optionId') as string;
 
+  // Validates the presence of pollId and optionId.
   if (!pollId) {
     return { message: 'Poll ID is missing.', errors: {} };
   }
@@ -18,8 +28,10 @@ export async function handleVote(
     return { message: 'Option ID is missing.', errors: {} };
   }
 
+  // Initializes Supabase client for database operations.
   const supabase = createClient();
 
+  // Fetches the poll and its options to validate the poll exists.
   const { data: poll, error: pollError } = await supabase
     .from('polls')
     .select(`
@@ -34,6 +46,7 @@ export async function handleVote(
     return { message: pollError?.message || 'Poll not found', errors: {} };
   }
 
+  // Checks if the user is authenticated.
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError || !userData?.user) {
@@ -43,7 +56,7 @@ export async function handleVote(
 
   const userId = userData.user.id;
 
-  // Check if the user has already voted for this poll
+  // Checks if the user has already voted for this poll.
   const { data: existingVote, error: existingVoteError } = await supabase
     .from('votes')
     .select('*')
@@ -61,7 +74,7 @@ export async function handleVote(
     return { message: 'You have already voted for this poll.', errors: {} };
   }
 
-  // Insert the new vote
+  // Records the new vote in the database.
   const { error: voteInsertError } = await supabase.from('votes').insert({
     user_id: userId,
     poll_id: pollId,
@@ -73,7 +86,7 @@ export async function handleVote(
     return { message: voteInsertError.message, errors: {} };
   }
 
-  // Increment the vote count for the selected option
+  // Increments the vote count for the selected option using a Supabase RPC function.
   const { error } = await supabase
     .rpc('increment_vote', { option_id_param: optionId });
 
@@ -81,6 +94,8 @@ export async function handleVote(
     console.error('Error voting:', error.message);
     return { message: error.message, errors: {} };
   }
+
+  // Revalidates the path to ensure the UI reflects the updated vote count.
   revalidatePath(`/polls/${pollId}`);
   return { message: 'Vote submitted successfully!', errors: {} };
 }

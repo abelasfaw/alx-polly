@@ -21,6 +21,10 @@ type FormValues = {
 
 };
 
+/**
+ * Defines the schema for the poll creation form using Zod.
+ * It validates the poll title, description, options, and an optional end date.
+ */
 const formSchema = z.object({
   title: z.string().min(5, { message: 'Title must be at least 5 characters.' }).max(100, { message: 'Title must not exceed 100 characters.' }),
   description: z.string().max(500, { message: 'Description must not exceed 500 characters.' }).optional(),
@@ -32,11 +36,19 @@ const formSchema = z.object({
 
 });
 
+/**
+ * CreatePollPage component for creating new polls.
+ * Users can input a poll title, description, multiple options, and an optional end date.
+ * Requires user authentication.
+ */
 export default function CreatePollPage() {
+  // State to manage the active tab between 'basic' and 'settings'.
   const [activeTab, setActiveTab] = useState<'basic' | 'settings'>('basic');
   const router = useRouter();
+  // Retrieves user authentication status from AuthContext.
   const { user, loading } = useAuth();
 
+  // Initializes the form with Zod resolver for validation and default values.
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,31 +60,48 @@ export default function CreatePollPage() {
     },
   });
   
+  // Manages dynamic form fields for poll options.
   const { fields, append, remove } = useFieldArray({
      control: form.control,
      name: "options",
    });
 
+  // Redirects unauthenticated users to the login page.
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
 
+  // Displays a loading message while authentication status is being determined.
   if (loading || !user) {
     return <div>Loading...</div>; // Or a more sophisticated loading spinner
   }
 
+  /**
+   * Adds a new empty option field to the poll options array.
+   */
   const addOption = () => {
     append({ value: '' });
   };
 
+  /**
+   * Removes an option field from the poll options array.
+   * Prevents removal if there are only two options left.
+   * @param {number} index - The index of the option to remove.
+   */
   const removeOption = (index: number) => {
-    if (fields.length <= 2) return; // Minimum 2 options
+    if (fields.length <= 2) return; // Minimum 2 options must remain.
     remove(index);
   };
 
+  /**
+   * Handles the form submission for creating a new poll.
+   * Calls the createPoll server action and redirects on success.
+   * @param {FormValues} data - The form data containing poll title, description, options, and end date.
+   */
   const onSubmit = async (data: FormValues) => {
+    // Transforms options array for submission.
     const pollData = {
       ...data,
       options: data.options.map(option => option.value)
@@ -82,27 +111,29 @@ export default function CreatePollPage() {
     console.log('Result from createPoll:', result);
 
     if (result.success) {
-      router.push('/polls');
+      router.push('/polls'); // Redirect to polls list on success.
       alert('Poll created successfully!');
     } else {
       console.error('Poll creation failed:', result.error);
-      alert(`Error: ${result.error}`);
+      alert(`Error: ${result.error}`); // Display error message to the user.
     }
   };
 
   return (
     <div className="container mx-auto py-8">
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
+        {/* Header section for the create poll page */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Create New Poll</h1>
+          {/* Button to navigate back to the polls list */}
           <Button variant="outline" asChild>
             <Link href="/polls">Cancel</Link>
           </Button>
         </div>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation for Basic Info and Settings */}
         <div className="flex mb-6">
+          {/* Basic Info tab button */}
           <button
             type="button"
             onClick={() => setActiveTab('basic')}
@@ -114,6 +145,7 @@ export default function CreatePollPage() {
           >
             Basic Info
           </button>
+          {/* Settings tab button */}
           <button
             type="button"
             onClick={() => setActiveTab('settings')}
@@ -131,6 +163,7 @@ export default function CreatePollPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="max-w-2xl mx-auto">
+            {/* Conditional rendering for Basic Info tab content */}
             {activeTab === 'basic' && (
               <>
                 <CardHeader>
@@ -140,6 +173,7 @@ export default function CreatePollPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6">
+                  {/* Poll Title input field */}
                   <FormField
                     control={form.control}
                     name="title"
@@ -154,6 +188,7 @@ export default function CreatePollPage() {
                     )}
                   />
 
+                  {/* Poll Description input field */}
                   <FormField
                     control={form.control}
                     name="description"
@@ -168,9 +203,11 @@ export default function CreatePollPage() {
                     )}
                   />
 
+                  {/* Dynamic Poll Options section */}
                   <div className="space-y-4">
                      <FormLabel>Poll Options</FormLabel>
                      
+                     {/* Renders each poll option input field */}
                      {fields.map((field, index) => (
                       <FormField
                         key={field.id}
@@ -186,6 +223,7 @@ export default function CreatePollPage() {
                                   required
                                 />
                               </FormControl>
+                              {/* Button to remove an option, visible if more than 2 options exist */}
                               {fields.length > 2 && (
                                 <Button 
                                   type="button" 
@@ -203,6 +241,7 @@ export default function CreatePollPage() {
                       />
                     ))}
                      
+                     {/* Button to add a new poll option */}
                      <Button 
                        type="button" 
                        variant="outline" 
@@ -215,6 +254,7 @@ export default function CreatePollPage() {
                    </div>
                  </CardContent>
                 <CardFooter className="flex justify-end pt-6">
+                  {/* Button to submit the poll creation form */}
                   <Button 
                     type="button"
                     onClick={() => {
@@ -227,6 +267,7 @@ export default function CreatePollPage() {
                 </CardFooter>
               </>
             )}
+            {/* Conditional rendering for Poll Settings tab content */}
             {activeTab === 'settings' && (
               <>
                 <CardHeader>
@@ -236,6 +277,7 @@ export default function CreatePollPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Poll End Date input field */}
                   <FormField
                     control={form.control}
                     name="endDate"
